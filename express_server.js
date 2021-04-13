@@ -1,10 +1,11 @@
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: false }));
-
+app.use(cookieParser());
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -39,35 +40,50 @@ app.get("/", (req, res) => {
 
 //page for new url
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies.username
+  }
+  res.render("urls_new", templateVars);
 });
 
 // page to new create new shortlink url
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies.username,
+  };
   res.render("urls_show", templateVars);
 });
 
 // functionality to create new shortlink url
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.newLongUrl;
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies.username,
+  };
 
   res.render("urls_show", templateVars);
 });
 
 //deletes url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  console.log(urlDatabase);
   delete urlDatabase[req.params.shortURL];
-  const templateVars = { urls: urlDatabase };
-  console.log(templateVars)
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies.username,
+  };
   res.render("urls_index", templateVars);
 });
 
 //returns list or urls
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies.username,
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -75,8 +91,31 @@ app.get("/urls", (req, res) => {
 app.post("/urls", (req, res) => {
   let shortLink = generateRandomString();
   urlDatabase[shortLink] = req.body.longURL;
-  const templateVars = { shortURL: shortLink, longURL: urlDatabase[shortLink] };
+  const templateVars = {
+    shortURL: shortLink, longURL: urlDatabase[shortLink],
+    username: req.cookies.username,
+  };
   res.render("urls_show", templateVars);
+});
+
+//handles login
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body.username);
+  const templateVars = {
+    username: req.body.username,
+    urls: urlDatabase
+  };
+  res.render("urls_index", templateVars);
+});
+
+//handles logout
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  const templateVars = {
+    username: req.body.username,
+    urls: urlDatabase
+  };
+  res.render("urls_index", templateVars);
 });
 
 //edit 
