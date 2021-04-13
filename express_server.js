@@ -26,7 +26,7 @@ let generateRandomString = () => {
   }
 
   return shortUrl.join("");
-};
+};  
 
 //listens to port
 app.listen(PORT, () => {
