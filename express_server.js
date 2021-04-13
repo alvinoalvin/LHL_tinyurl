@@ -8,7 +8,9 @@ app.use(express.urlencoded({ extended: false }));
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "9sm5xK": "http://www.bleh.com",
+  "b2xVn1": "http://www.blah.ca",
+  "9sm5xd": "http://www.blop.com"
 };
 
 let generateRandomString = () => {
@@ -25,23 +27,28 @@ let generateRandomString = () => {
   return shortUrl.join("");
 };
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
+//listens to port
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+//Home page sends hello
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
+//page for new url
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+// page to new create new shortlink url
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
 
+// functionality to create new shortlink url
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.newLongUrl;
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
@@ -49,18 +56,22 @@ app.post("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//deletes url
 app.post("/urls/:shortURL/delete", (req, res) => {
+  console.log(urlDatabase);
   delete urlDatabase[req.params.shortURL];
   const templateVars = { urls: urlDatabase };
+  console.log(templateVars)
   res.render("urls_index", templateVars);
 });
 
-
+//returns list or urls
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+//edit a shortlink to url
 app.post("/urls", (req, res) => {
   let shortLink = generateRandomString();
   urlDatabase[shortLink] = req.body.longURL;
@@ -68,6 +79,7 @@ app.post("/urls", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//edit 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
