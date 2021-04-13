@@ -22,7 +22,12 @@
           <a href="/u/<%= longURL %>"><%= longURL %></a>
         </p>
       </div>
-      <div class="card-footer text-muted"></div>
+      <div class="card-footer text-muted">
+        <div id="edit">
+          <h2>Edit</h2>
+          <form method="POST" action="/urls/9sm5xK">New url: <input type="text" name="newLongUrl" /> <input type="submit" value="submit" /></form>
+        </div>
+      </div>
     </div>
     <!-- Bootstrap JS -->
     <script
