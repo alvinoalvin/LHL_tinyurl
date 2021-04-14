@@ -8,10 +8,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.bleh.com",
-  "b2xVn1": "http://www.blah.ca",
-  "9sm5xd": "http://www.blop.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
+  "9sm5xK": { longURL: "http://www.bleh.com", userID: "userRandomID" },
+  "b2xVn1": { longURL: "http://www.blah.ca", userID: "user2RandomID" },
+  "9sm5xd": { longURL: "http://www.blop.com", userID: "user2RandomID" },
+  "9sm5xd": { longURL: "http://www.bloop.com", userID: "asdf" },
 };
 const users = {
   "userRandomID": {
@@ -23,6 +24,11 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "asdf": {
+    id: "asdf",
+    email: "asdf@asdf",
+    password: "asdf"
   }
 };
 
@@ -56,6 +62,19 @@ let getUserIdfromEmail = (lookup) => {
   return null;
 };
 
+let getUserObjects = (user) => {
+  if (!user) {
+    return {};
+  }
+  let returnObj = {};
+  for (let obj in urlDatabase) {
+    if (urlDatabase[obj].userID === user) {
+      returnObj[obj] = urlDatabase[obj];
+    }
+  }
+  return returnObj;
+};
+
 //listens to port
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -74,14 +93,18 @@ app.get("/urls/new", (req, res) => {
     userId: req.cookies.userId,
     users: users,
   };
-  res.render("urls_new", templateVars);
+  if (req.cookies.userId) {
+    res.render("urls_new", templateVars);
+  }
+  res.render("register", templateVars);
+
 });
 
 // page to new create new shortlink url
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     userId: req.cookies.userId,
     users: users,
   };
@@ -90,10 +113,16 @@ app.get("/urls/:shortURL", (req, res) => {
 
 // functionality to create new shortlink url
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.newLongUrl;
+  if (req.cookies.userId === urlDatabase[req.params.shortURL].userID) {
+    urlDatabase[req.params.shortURL] = {
+      longURL: req.body.newLongUrl,
+      userID: req.cookies.userId
+    };
+  }
+
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     userId: req.cookies.userId,
     users: users,
   };
@@ -103,32 +132,40 @@ app.post("/urls/:shortURL", (req, res) => {
 
 //deletes url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
+  if (req.cookies.userId === urlDatabase[req.params.shortURL].userID) {
+    delete urlDatabase[req.params.shortURL];
+  }
+
   const templateVars = {
-    urls: urlDatabase,
+    urls: getUserObjects(req.cookies.userId),
     userId: req.cookies.userId,
     users: users,
   };
   res.render("urls_index", templateVars);
 });
+
 
 //returns list or urls
 app.get("/urls", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
+    urls: getUserObjects(req.cookies.userId),
     userId: req.cookies.userId,
     users: users,
   };
   res.render("urls_index", templateVars);
 });
 
-//edit a shortlink to url
+//new url
 app.post("/urls", (req, res) => {
   let shortLink = generateRandomString();
-  urlDatabase[shortLink] = req.body.longURL;
+
+  urlDatabase[shortLink] = {
+    longURL: req.body.longURL,
+    userID: req.cookies.userId
+  };
   const templateVars = {
     shortURL: shortLink,
-    longURL: urlDatabase[shortLink],
+    longURL: urlDatabase[shortLink].longURL,
     userId: req.cookies.userId,
     users: users,
   };
@@ -194,8 +231,9 @@ app.post("/login", (req, res) => {
       res.cookie("userId", id);
       res.redirect("/urls");
     }
+  } else {
+    res.status(403).send('user doesnt exist or a field is empty');
   }
-  res.status(403).send('user doesnt exist or a field is empty');
 });
 
 //handles logout
@@ -203,7 +241,7 @@ app.post("/logout", (req, res) => {
   res.clearCookie("userId");
   const templateVars = {
     userId: req.body.userId,
-    urls: urlDatabase,
+    urls: getUserObjects(req.cookies.userId),
     users: users,
   };
   res.render("urls_index", templateVars);
@@ -211,7 +249,7 @@ app.post("/logout", (req, res) => {
 
 //edit
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
