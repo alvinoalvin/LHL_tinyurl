@@ -25,31 +25,23 @@
       </div>
     </div>
     <div>
-      <% if(user_id) {%>
+      <% if(userId !== false && userId!==undefined) { %>
       <form class="form-inline my-2 my-lg-0" method="post" action="/logout">
-        <p class="input-group-text mr-sm-2">Logged in as: <%= users[user_id].email %></p>
+        <p class="input-group-text mr-sm-2">
+          Logged in as: <%= users[userId].email %>
+        </p>
         <input
           class="btn btn-outline-success bg-light my-2 my-sm-0"
           type="submit"
           value="logout"
         />
       </form>
-      <% } else {%>
-      <form class="form-inline my-2 my-lg-0" method="post" action="/login">
-        <input
-          class="form-control mr-sm-2"
-          type="text"
-          name="username"
-          id="username"
-          placeholder="username"
-        />
-        <input
-          class="btn btn-outline-success bg-light my-2 my-sm-0"
-          type="submit"
-          value="submit"
-        />
-      </form>
-      <%}%>
+      <% } else { %>
+      <ul class="navbar-nav mr-auto">
+        <li><a class="nav-item nav-link" href="/login">Login</a></li>
+        <li><a class="nav-item nav-link" href="/register">Register</a></li>
+      </ul>
+      <% } %>
     </div>
   </nav>
 </header>
