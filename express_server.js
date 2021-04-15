@@ -7,6 +7,7 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+/* Link Datastructure */
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
   "9sm5xK": { longURL: "http://www.bleh.com", userID: "userRandomID" },
@@ -14,6 +15,8 @@ const urlDatabase = {
   "9sm5xd": { longURL: "http://www.blop.com", userID: "user2RandomID" },
   "9sm5xd": { longURL: "http://www.bloop.com", userID: "asdf" },
 };
+
+/* Users datastruct */
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -32,6 +35,9 @@ const users = {
   }
 };
 
+/*
+generates a random string of 6 alphanumeric chars and returns
+*/
 let generateRandomString = () => {
   let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charLength = chars.length;
@@ -46,6 +52,7 @@ let generateRandomString = () => {
   return shortUrl.join("");
 };
 
+/* checks whether the email exists in our datastructure */
 let checkEmailExists = (lookup) => {
   for (const id in users) {
     if (users[id].email === lookup)
@@ -54,6 +61,7 @@ let checkEmailExists = (lookup) => {
   return false;
 };
 
+/* returns the user_id from user data using the email */
 let getUserIdfromEmail = (lookup) => {
   for (const id in users) {
     if (users[id].email === lookup)
@@ -62,6 +70,7 @@ let getUserIdfromEmail = (lookup) => {
   return null;
 };
 
+/* returns the objects related to the user */
 let getUserObjects = (user) => {
   if (!user) {
     return {};
@@ -85,22 +94,21 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-//Home page sends hello
-
-//page for new url
+//get page for new url
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     userId: req.cookies.userId,
     users: users,
   };
+
   if (req.cookies.userId) {
     res.render("urls_new", templateVars);
   }
-  res.render("register", templateVars);
+  res.render("login", templateVars);
 
 });
 
-// page to new create new shortlink url
+//record view for link
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
@@ -108,10 +116,14 @@ app.get("/urls/:shortURL", (req, res) => {
     userId: req.cookies.userId,
     users: users,
   };
-  res.render("urls_show", templateVars);
+  if (req.cookies.userId) {
+    res.render("urls_show", templateVars);
+  }
+
+  res.status(403).send('Forbidden: you are unable to access this information.');
 });
 
-// functionality to create new shortlink url
+//allow to change link
 app.post("/urls/:shortURL", (req, res) => {
   if (req.cookies.userId === urlDatabase[req.params.shortURL].userID) {
     urlDatabase[req.params.shortURL] = {
@@ -134,18 +146,21 @@ app.post("/urls/:shortURL", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (req.cookies.userId === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
+
+    const templateVars = {
+      urls: getUserObjects(req.cookies.userId),
+      userId: req.cookies.userId,
+      users: users,
+    };
+    res.render("urls_index", templateVars);
   }
 
-  const templateVars = {
-    urls: getUserObjects(req.cookies.userId),
-    userId: req.cookies.userId,
-    users: users,
-  };
-  res.render("urls_index", templateVars);
+  res.status(403).send('Error 403: You do not have permission to delete this entry');
+
 });
 
 
-//returns list or urls
+//returns list of urls for the logged in user 
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: getUserObjects(req.cookies.userId),
@@ -163,16 +178,18 @@ app.post("/urls", (req, res) => {
     longURL: req.body.longURL,
     userID: req.cookies.userId
   };
+
   const templateVars = {
     shortURL: shortLink,
     longURL: urlDatabase[shortLink].longURL,
     userId: req.cookies.userId,
     users: users,
   };
+
   res.render("urls_show", templateVars);
 });
 
-//registration page
+//get registration page
 app.get("/register", (req, res) => {
   const templateVars = {
     userId: req.body.userId,
@@ -182,7 +199,7 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
-//registration page
+//post: register user
 app.post("/register", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
@@ -190,10 +207,8 @@ app.post("/register", (req, res) => {
 
   if (checkEmailExists(email) || !email || !password) {
     res.status(403).send('Email already exists or a field is empty');
-  } else if (req.body.email && req.body.password) {
-    email = req.body.email;
-    password = req.body.password;
-
+  }
+  else if (req.body.email && req.body.password) {
     users[id] = {
       id: id,
       email: email,
@@ -205,9 +220,11 @@ app.post("/register", (req, res) => {
   }
 
 });
-//handles login
+
+//gets login page
 app.get("/login", (req, res) => {
   let id = false;
+
   if (req.body.userId) {
     id = req.body.userId;
   }
@@ -219,7 +236,7 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-//get for login page
+//post: handles login
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
@@ -231,19 +248,20 @@ app.post("/login", (req, res) => {
       res.cookie("userId", id);
       res.redirect("/urls");
     }
-  } else {
-    res.status(403).send('user doesnt exist or a field is empty');
   }
+  res.status(403).send('user doesnt exist or a field is empty');
 });
 
 //handles logout
 app.post("/logout", (req, res) => {
   res.clearCookie("userId");
+
   const templateVars = {
     userId: req.body.userId,
     urls: getUserObjects(req.cookies.userId),
     users: users,
   };
+
   res.render("urls_index", templateVars);
 });
 
@@ -257,16 +275,3 @@ app.get("/hello", (req, res) => {
   const templateVars = { greeting: 'Hello World!' };
   res.render("hello_world", templateVars);
 });
-
-
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-// app.get("/set", (req, res) => {
-//   const a = 1;
-//   res.send(`a = ${a}`);
-// });
-
-// app.get("/fetch", (req, res) => {
-//   res.send(`a = ${a}`);
-// });
