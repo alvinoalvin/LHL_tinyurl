@@ -25,7 +25,7 @@
       </div>
     </div>
     <div>
-      <% if(userId !== false && userId!==undefined) { %>
+      <% if(userId !== false && userId!==undefined && users[userId]) { %>
       <form class="form-inline my-2 my-lg-0" method="post" action="/logout">
         <p class="input-group-text mr-sm-2">
           Logged in as: <%= users[userId].email %>
