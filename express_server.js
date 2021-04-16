@@ -58,19 +58,20 @@ app.put("/urls/new", (req, res) => {
 /* get: record view for a tinyurl */
 app.get("/urls/:shortURL", (req, res) => {
   const userSessId = req.session.userId;
+  const shortURL = req.params.shortURL
 
   const templateVars = {
-    shortURL: req.params.shortURL,
+    shortURL: shortURL,
     urlDatabase: urlDatabase,
     urls: helpers.getUserObjects(userSessId, urlDatabase),
     userId: userSessId,
     users: users,
     error: null,
   };
-
   if (userSessId === urlDatabase[req.params.shortURL].userID) {
     res.render("urls_show", templateVars);
-  } else {
+  }
+  else {
     templateVars.error = "Unable to access tinyURL as it's not associated with your account.";
     res.status(403).render("urls_index", templateVars);
   }
@@ -101,7 +102,6 @@ app.post("/urls/:shortURL", (req, res) => {
 
 /* post: deletes url */
 app.delete("/urls/:shortURL", (req, res) => {
-  console.log('delete')
   const userSessId = req.session.userId;
 
   if (userSessId === urlDatabase[req.params.shortURL].userID) {
