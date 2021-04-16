@@ -48,9 +48,22 @@ let getUserObjects = (user, urlDatabase) => {
   return returnObj;
 };
 
-let errorRedirect = (res, templateVars, errorCode, errorMessage, redirectPage) => {
-  templateVars.error = errorMessage;
-  res.status(errorCode).render(redirectPage, templateVars);
+/* set the error message and redirect if errors are occuring */
+let errorRedirect = (res, req, errorCode, errorMessage, redirectPage) => {
+  req.session.error = errorMessage;
+  res.status(errorCode).redirect(redirectPage);
+};
+
+/* redirect if no errors occure */
+let happyRedirect = (res, req, path) => {
+  req.session.error = null;
+  res.redirect(path);
+};
+
+/* render if no errors occure */
+let happyRender = (res, req, path, templateVars) => {
+  req.session.error = null;
+  res.render(path, templateVars);
 };
 
 module.exports = {
@@ -59,4 +72,6 @@ module.exports = {
   getUserIdfromEmail,
   getUserObjects,
   errorRedirect,
+  happyRedirect,
+  happyRender,
 };

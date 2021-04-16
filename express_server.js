@@ -3,7 +3,7 @@ const express = require("express");
 const bcrypt = require('bcrypt');
 const helpers = require('./helper');
 const { PORT, urlDatabase, users } = require("./database");
-const methodOverride = require('method-override')
+const methodOverride = require('method-override');
 const app = express();
 
 app.set("view engine", "ejs");
@@ -11,8 +11,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieSession({
   name: 'session', keys: ["secret", "keys"], maxAge: (24 * 60 * 60 * 1000) //max age 24hrs
 }));
-app.use(methodOverride('_method'))
-
+app.use(methodOverride('_method'));
 
 //listen to specified port
 app.listen(PORT, () => {
@@ -21,7 +20,7 @@ app.listen(PORT, () => {
 
 /* index directs to register */
 app.get("/", (req, res) => {
-  res.redirect("register");
+  helpers.happyRedirect(res, req, "register");
 });
 
 /* get: page containing tinyurl form */
@@ -30,13 +29,13 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     userId: userSessId,
     users: users,
-    error: null,
+    error: req.session.error,
   };
 
   if (userSessId) {
-    res.render("urls_new", templateVars);
+    helpers.happyRender(res, req, "urls_new", templateVars);
   } else {
-    helpers.errorRedirect(res, templateVars, 403, "please log in to create a new tinyURL", "/login/")
+    helpers.errorRedirect(res, req, 403, "please log in to create a new tinyURL", "/login/");
   }
 });
 
@@ -51,27 +50,28 @@ app.put("/urls/new", (req, res) => {
     urlDatabase: urlDatabase,
   };
 
-  res.redirect(shortLink);
+  helpers.happyRedirect(res, req, shortLink);
 });
 
 /* get: record view for a tinyurl */
 app.get("/urls/:shortURL", (req, res) => {
   const userSessId = req.session.userId;
-  const shortURL = req.params.shortURL
+  const shortURL = req.params.shortURL;
 
+  console.log(req.params.shortURL);
+  console.log(urlDatabase);
   const templateVars = {
     shortURL: shortURL,
     urlDatabase: urlDatabase,
     urls: helpers.getUserObjects(userSessId, urlDatabase),
     userId: userSessId,
     users: users,
-    error: null,
+    error: req.session.error,
   };
   if (userSessId === urlDatabase[req.params.shortURL].userID) {
-    res.render("urls_show", templateVars);
-  }
-  else {
-    helpers.errorRedirect(res, templateVars, 403, "Unable to access tinyURL as it's not associated with your account.", "/urls_index/")
+    helpers.happyRender(res, req, "urls_show", templateVars);
+  } else {
+    helpers.errorRedirect(res, req, 403, "Unable to access tinyURL as it's not associated with your account.", "/urls/");
   }
 });
 
@@ -83,7 +83,7 @@ app.post("/urls/:shortURL", (req, res) => {
     urlDatabase: urlDatabase,
     userId: userSessId,
     users: users,
-    error: null,
+    error: req.session.error,
   };
 
   if (userSessId === urlDatabase[req.params.shortURL].userID) {
@@ -91,9 +91,9 @@ app.post("/urls/:shortURL", (req, res) => {
       longURL: req.body.newLongUrl,
       userID: userSessId
     };
-    res.render("urls_show", templateVars);
+    helpers.happyRender(res, req, "urls_show", templateVars);
   } else {
-    helpers.errorRedirect(res, templateVars, 403, "Unable to edit tinyURL as it's not associated with your account.", "/urls_show/")
+    helpers.errorRedirect(res, req, 403, "Unable to edit tinyURL as it's not associated with your account.", "/urls/" + req.params.shortURL);
   }
 });
 
@@ -109,12 +109,11 @@ app.delete("/urls/:shortURL", (req, res) => {
       userId: userSessId,
       urlDatabase: urlDatabase,
       users: users,
-      error: null,
+      error: req.session.error,
     };
-    res.render("urls_index", templateVars);
-  }
-  else {
-    helpers.errorRedirect(res, templateVars, 403, "Unable to delete tinyURL as it's not associated with your account.", "/urls_show/")
+    helpers.happyRender(res, req, "urls_index", templateVars);
+  } else {
+    helpers.errorRedirect(res, req, 403, "Unable to delete tinyURL as it's not associated with your account.", "/urls/" + req.params.shortURL);
   }
 
 });
@@ -128,13 +127,13 @@ app.get("/urls", (req, res) => {
     urls: helpers.getUserObjects(userSessId, urlDatabase),
     userId: userSessId,
     users: users,
-    error: null,
+    error: req.session.error,
   };
   if (!userSessId) {
-    helpers.errorRedirect(res, templateVars, 403, "please login to view.", "login")
+    helpers.errorRedirect(res, req, 403, "please login to view.", "login");
 
   } else {
-    res.render("urls_index", templateVars);
+    helpers.happyRender(res, req, "urls_index", templateVars);
   }
 });
 
@@ -143,10 +142,10 @@ app.get("/register", (req, res) => {
   const templateVars = {
     userId: req.body.userId,
     users: users,
-    error: null,
+    error: req.session.error,
   };
 
-  res.render("register", templateVars);
+  helpers.happyRender(res, req, "register", templateVars);
 });
 
 /* post: registers user */
@@ -154,17 +153,11 @@ app.post("/register", (req, res) => {
   let { email, password } = req.body;
   const id = helpers.generateRandomString();
   const isInputBlank = !email || !password;
-  const templateVars = {
-    userId: req.body.userId,
-    users: users,
-    error: null,
-  }
 
   if (isInputBlank) {
-    helpers.errorRedirect(res, templateVars, 403, "Password or Email is blank", "register")
-  }
-  else if (helpers.checkEmailExists(email, users)) {
-    helpers.errorRedirect(res, templateVars, 403, "Email already exists", "register")
+    helpers.errorRedirect(res, req, 403, "Password or Email is blank", "register");
+  } else if (helpers.checkEmailExists(email, users)) {
+    helpers.errorRedirect(res, req, 403, "Email already exists", "register");
   }
 
   if (!isInputBlank) {
@@ -177,7 +170,7 @@ app.post("/register", (req, res) => {
     };
 
     req.session.userId = id;
-    res.redirect("/urls");
+    helpers.happyRedirect(res, req, "/urls");
   }
 });
 
@@ -192,37 +185,27 @@ app.get("/login", (req, res) => {
     userId: id,
     users: users,
     status: res.statusCode,
-    error: null,
+    error: req.session.error,
   };
-  res.render("login", templateVars);
+  helpers.happyRender(res, req, "login", templateVars);
 });
 
 /* post: handles login */
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  let id = false;
   const isInputBlank = !email || !password;
-  const templateVars = {
-    userId: req.session.userId,
-    users: users,
-    status: res.statusCode,
-    error: null,
-  }
-
 
   if (isInputBlank) {
-    templateVars.error = "Password or Email is blank";
-    res.status(403).render(`login`, templateVars);
-  }
-  else if (!isInputBlank) {
-    if (helpers.checkEmailExists(email, users) && bcrypt.compareSync(password, users[helpers.getUserIdfromEmail(email, users)].password)) { //happy path :)
-      id = helpers.getUserIdfromEmail(email, users);
-      req.session.userId = id;
-      res.redirect("/urls");
+    helpers.errorRedirect(res, req, 403, "Password or Email is blank", "login");
+  } else {
+    const userID = helpers.getUserIdfromEmail(email, users);
+
+    if (helpers.checkEmailExists(email, users) && bcrypt.compareSync(password, users[userID].password)) { //happy path :)
+      req.session.userId = userID;
+      helpers.happyRedirect(res, req, "/urls");
+    } else {
+      helpers.errorRedirect(res, req, 403, "user doesnt exist", "login");
     }
-  }
-  else {
-    helpers.errorRedirect(res, templateVars, 403, "user doesnt exist or a field is empty", "login")
   }
 });
 
