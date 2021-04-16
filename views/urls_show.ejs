@@ -16,15 +16,18 @@
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
+        <h5 class="card-title">TinyURL for: <%= urlDatabase[shortURL].longURL %></h5>
         <p class="card-text">
           Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a> Long URL:
-          <a href="<%= longURL %>"><%= longURL %></a>
+          <a href="<%= urlDatabase[shortURL].longURL %>"><%= urlDatabase[shortURL].longURL %></a>
         </p>
       </div>
       <div class="card-footer text-muted">
         <div id="edit">
           <h2>Edit</h2>
+      <% if(error){ %>
+        <%- include('partials/_error') %>
+      <% } %>
           <form method="POST" action="/urls/<%= shortURL %>">
             New url: <input type="text" name="newLongUrl" />
             <input type="submit" value="submit" />
