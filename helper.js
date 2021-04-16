@@ -48,9 +48,15 @@ let getUserObjects = (user, urlDatabase) => {
   return returnObj;
 };
 
+let errorRedirect = (res, templateVars, errorCode, errorMessage, redirectPage) => {
+  templateVars.error = errorMessage;
+  res.status(errorCode).render(redirectPage, templateVars);
+};
+
 module.exports = {
   generateRandomString,
   checkEmailExists,
   getUserIdfromEmail,
   getUserObjects,
+  errorRedirect,
 };

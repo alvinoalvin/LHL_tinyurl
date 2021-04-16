@@ -36,8 +36,7 @@ app.get("/urls/new", (req, res) => {
   if (userSessId) {
     res.render("urls_new", templateVars);
   } else {
-    templateVars.error = "please log in to create a new tinyURL";
-    res.status(403).render("login", templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "please log in to create a new tinyURL", "/login/")
   }
 });
 
@@ -72,8 +71,7 @@ app.get("/urls/:shortURL", (req, res) => {
     res.render("urls_show", templateVars);
   }
   else {
-    templateVars.error = "Unable to access tinyURL as it's not associated with your account.";
-    res.status(403).render("urls_index", templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "Unable to access tinyURL as it's not associated with your account.", "/urls_index/")
   }
 });
 
@@ -95,8 +93,7 @@ app.post("/urls/:shortURL", (req, res) => {
     };
     res.render("urls_show", templateVars);
   } else {
-    templateVars.error = "Unable to edit tinyURL as it's not associated with your account.";
-    res.status(403).render("urls_show", templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "Unable to edit tinyURL as it's not associated with your account.", "/urls_show/")
   }
 });
 
@@ -117,8 +114,7 @@ app.delete("/urls/:shortURL", (req, res) => {
     res.render("urls_index", templateVars);
   }
   else {
-    templateVars.error = "Unable to delete tinyURL as it's not associated with your account.";
-    res.status(403).render(`/urls_show/`, templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "Unable to delete tinyURL as it's not associated with your account.", "/urls_show/")
   }
 
 });
@@ -135,8 +131,8 @@ app.get("/urls", (req, res) => {
     error: null,
   };
   if (!userSessId) {
-    templateVars.error = "please login to view.";
-    res.status(403).render(`login`, templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "please login to view.", "login")
+
   } else {
     res.render("urls_index", templateVars);
   }
@@ -165,12 +161,10 @@ app.post("/register", (req, res) => {
   }
 
   if (isInputBlank) {
-    templateVars.error = "Password or Email is blank";
-    res.status(403).render(`register`, templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "Password or Email is blank", "register")
   }
   else if (helpers.checkEmailExists(email, users)) {
-    templateVars.error = "Email already exists";
-    res.status(403).render(`register`, templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "Email already exists", "register")
   }
 
   if (!isInputBlank) {
@@ -207,8 +201,20 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   let id = false;
+  const isInputBlank = !email || !password;
+  const templateVars = {
+    userId: req.session.userId,
+    users: users,
+    status: res.statusCode,
+    error: null,
+  }
 
-  if (email) {
+
+  if (isInputBlank) {
+    templateVars.error = "Password or Email is blank";
+    res.status(403).render(`login`, templateVars);
+  }
+  else if (!isInputBlank) {
     if (helpers.checkEmailExists(email, users) && bcrypt.compareSync(password, users[helpers.getUserIdfromEmail(email, users)].password)) { //happy path :)
       id = helpers.getUserIdfromEmail(email, users);
       req.session.userId = id;
@@ -216,30 +222,15 @@ app.post("/login", (req, res) => {
     }
   }
   else {
-    const templateVars = {
-      userId: req.session.userId,
-      users: users,
-      status: res.statusCode,
-      error: null,
-    };
-
-    templateVars.error = "user doesnt exist or a field is empty";
-    res.status(403).render(`login`, templateVars);
+    helpers.errorRedirect(res, templateVars, 403, "user doesnt exist or a field is empty", "login")
   }
 });
+
 
 /*post: handles logout */
 app.post("/logout", (req, res) => {
   req.session = null;
-
-  const templateVars = {
-    userId: (req.body.userId),
-    urls: {},
-    users: users,
-    error: null,
-  };
-
-  res.render("urls_index", templateVars);
+  res.redirect("urls");
 });
 
 /* redirects to longurl */
