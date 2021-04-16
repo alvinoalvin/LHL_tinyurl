@@ -58,8 +58,6 @@ app.get("/urls/:shortURL", (req, res) => {
   const userSessId = req.session.userId;
   const shortURL = req.params.shortURL;
 
-  console.log(req.params.shortURL);
-  console.log(urlDatabase);
   const templateVars = {
     shortURL: shortURL,
     urlDatabase: urlDatabase,
