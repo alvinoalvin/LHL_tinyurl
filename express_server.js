@@ -42,10 +42,14 @@ app.get("/urls/new", (req, res) => {
 /* put:creates new tinyURL */
 app.put("/urls/new", (req, res) => {
   const userSessId = req.session.userId;
-  let shortLink = helpers.generateRandomString();
+  const shortLink = helpers.generateRandomString();
+  let longLink = req.body.longURL;
 
+  if (!longLink.includes("https://") && !longLink.includes("http://") ) {
+    longLink = `https://${longLink}`;
+  }
   urlDatabase[shortLink] = {
-    longURL: req.body.longURL,
+    longURL: longLink,
     userID: userSessId,
     urlDatabase: urlDatabase,
   };
@@ -174,13 +178,13 @@ app.post("/register", (req, res) => {
 
 /* get: retrieves login page */
 app.get("/login", (req, res) => {
-  let id = false;
+  let userID = false;
 
   if (req.body.userId) {
-    id = req.body.userId;
+    userID = req.body.userId;
   }
   const templateVars = {
-    userId: id,
+    userId: userID,
     users: users,
     status: res.statusCode,
     error: req.session.error,
